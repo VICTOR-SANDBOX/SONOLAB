@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teatro - Central de Sonoplastia</title>
+    <meta name="description" content="Sistema profissional de sonoplastia para teatro. Controle efeitos, BGMs e utilitários em uma interface moderna.">
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar para Categorias -->
+        <aside class="sidebar">
+            <div class="logo">
+                <h1>SONO<span>LAB</span></h1>
+                <p>Teatro Control Panel</p>
+            </div>
+            
+            <nav class="categories">
+                <button class="cat-btn active" data-category="all">Todos</button>
+                <button class="cat-btn" data-category="ambient">Ambiente</button>
+                <button class="cat-btn" data-category="sfx">Efeitos (SFX)</button>
+                <button class="cat-btn" data-category="music">Músicas</button>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="timer" id="main-timer">00:00:00</div>
+                <button id="add-custom" class="secondary-btn">+ Adicionar Som</button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-bar">
+                <div class="global-controls">
+                    <div class="control-group">
+                        <label>Master Volume</label>
+                        <input type="range" id="master-volume" min="0" max="1" step="0.01" value="0.7">
+                    </div>
+                    <button id="panic-button" class="panic-btn">PARAR TUDO (ESC)</button>
+                </div>
+            </header>
+
+            <section class="soundboard-grid" id="soundboard">
+                <!-- Cards serão gerados via JS -->
+            </section>
+
+            <!-- Bottom Section for BGMs / Long Tracks -->
+            <section class="active-tracks-section">
+                <div class="section-header">
+                    <h2>Tracks Ativas</h2>
+                </div>
+                <div id="active-tracks-list" class="active-tracks-container">
+                    <!-- Tracks em execução aparecerão aqui -->
+                    <div class="empty-state">Nenhuma trilha longa em execução.</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Hidden Input for loading files -->
+    <input type="file" id="file-input" multiple accept="audio/*" style="display: none;">
+
+    <script src="script.js"></script>
+</body>
+</html>

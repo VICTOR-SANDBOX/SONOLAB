@@ -1,0 +1,336 @@
+:root {
+    --bg-main: #0a0b10;
+    --bg-card: rgba(255, 255, 255, 0.05);
+    --bg-sidebar: #050608;
+    --accent: #6366f1;
+    --accent-hover: #4f46e5;
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --danger: #ef4444;
+    --success: #22c55e;
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    --font-main: 'Outfit', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-main);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    padding: 2rem 1.5rem;
+}
+
+.logo h1 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+}
+
+.logo span {
+    color: var(--accent);
+}
+
+.logo p {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.categories {
+    margin-top: 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.cat-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    text-align: left;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cat-btn:hover {
+    background: var(--bg-card);
+    color: var(--text-primary);
+}
+
+.cat-btn.active {
+    background: var(--accent);
+    color: white;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+}
+
+.timer {
+    font-family: var(--font-mono);
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+    color: var(--accent);
+    background: rgba(99, 102, 241, 0.1);
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    text-align: center;
+}
+
+.secondary-btn {
+    width: 100%;
+    padding: 0.75rem;
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    color: var(--text-primary);
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.secondary-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.top-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 2rem;
+}
+
+.global-controls {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    background: var(--bg-card);
+    padding: 0.75rem 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid var(--glass-border);
+}
+
+.control-group {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.control-group label {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+input[type="range"] {
+    accent-color: var(--accent);
+    cursor: pointer;
+}
+
+.panic-btn {
+    background: var(--danger);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.25rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.39);
+}
+
+/* Soundboard Grid */
+.soundboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.sound-card {
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 1rem;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+}
+
+.sound-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+}
+
+.sound-card:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.sound-card.playing {
+    border-color: var(--accent);
+    box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+}
+
+.sound-card.playing::before {
+    opacity: 1;
+}
+
+.sound-info {
+    flex: 1;
+}
+
+.sound-name {
+    font-weight: 600;
+    display: block;
+    margin-bottom: 0.25rem;
+}
+
+.sound-meta {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.sound-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sound-controls input[type="range"] {
+    width: 100%;
+}
+
+.loop-toggle {
+    background: transparent;
+    border: 1px solid var(--glass-border);
+    color: var(--text-secondary);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    cursor: pointer;
+}
+
+.loop-toggle.active {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+/* Active Tracks Section */
+.active-tracks-section {
+    margin-top: auto;
+    background: var(--bg-card);
+    border: 1px solid var(--glass-border);
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+}
+
+.section-header h2 {
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+
+.active-tracks-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.bgm-track {
+    display: grid;
+    grid-template-columns: 2fr 3fr 1fr;
+    align-items: center;
+    gap: 2rem;
+    padding: 1rem;
+    background: rgba(0,0,0,0.2);
+    border-radius: 0.75rem;
+}
+
+.track-progress {
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    position: relative;
+    overflow: hidden;
+}
+
+.progress-bar {
+    position: absolute;
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+}
+
+.empty-state {
+    text-align: center;
+    color: var(--text-secondary);
+    font-style: italic;
+    padding: 1rem;
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--glass-border);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255,255,255,0.2);
+}
