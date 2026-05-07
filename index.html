@@ -1,24 +1,32 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Teatro - Central de Sonoplastia</title>
-    <meta name="description" content="Sistema profissional de sonoplastia para teatro. Controle efeitos, BGMs e utilitários em uma interface moderna.">
+    <title>SONOLAB - Central de Sonoplastia</title>
+    <meta name="description"
+        content="Sistema de sonoplastia para teatro. Controle efeitos, BGMs e utilitários em uma interface simples.">
+    <link rel="icon" type="image/png" href="icon.png">
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono&display=swap"
+        rel="stylesheet">
 </head>
+
 <body>
     <div class="app-container">
         <!-- Sidebar para Categorias -->
         <aside class="sidebar">
             <div class="logo">
-                <h1>SONO<span>LAB</span></h1>
-                <p>Teatro Control Panel</p>
+                <img src="icon.png" alt="Sonolab Icon" class="logo-icon">
+                <div class="logo-text">
+                    <h1>SONO<span>LAB</span></h1>
+                    <p>Teatro Control Panel</p>
+                </div>
             </div>
-            
+
             <nav class="categories">
                 <button class="cat-btn active" data-category="all">Todos</button>
                 <button class="cat-btn" data-category="ambient">Ambiente</button>
@@ -29,6 +37,11 @@
             <div class="sidebar-footer">
                 <div class="timer" id="main-timer">00:00:00</div>
                 <button id="add-custom" class="secondary-btn">+ Adicionar Som</button>
+                <div style="display: flex; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button id="btn-export" class="secondary-btn" title="Salvar roteiro e sons em arquivo JSON" style="font-size:0.8rem;">&#128190; Exportar</button>
+                    <button id="btn-import" class="secondary-btn" title="Carregar roteiro salvo" style="font-size:0.8rem;">&#128193; Importar</button>
+                </div>
+                <input type="file" id="import-input" accept=".json" style="display:none;">
             </div>
         </aside>
 
@@ -37,33 +50,100 @@
             <header class="top-bar">
                 <div class="global-controls">
                     <div class="control-group">
+                        <button id="global-settings-btn" class="secondary-btn" title="Efeitos Globais" style="padding: 0.5rem 1rem;">⚙️ Master</button>
                         <label>Master Volume</label>
-                        <input type="range" id="master-volume" min="0" max="1" step="0.01" value="0.7">
+                        <input type="range" id="master-volume" min="0" max="2" step="0.05" value="0.7">
                     </div>
                     <button id="panic-button" class="panic-btn">PARAR TUDO (ESC)</button>
                 </div>
             </header>
 
-            <section class="soundboard-grid" id="soundboard">
-                <!-- Cards serão gerados via JS -->
-            </section>
+            <div class="content-split">
+                <!-- Painel de Sons -->
+                <div class="sounds-section">
+                    <section class="soundboard-grid" id="soundboard">
+                        <!-- Cards serão gerados via JS -->
+                    </section>
 
-            <!-- Bottom Section for BGMs / Long Tracks -->
-            <section class="active-tracks-section">
-                <div class="section-header">
-                    <h2>Tracks Ativas</h2>
+                    <!-- Bottom Section for BGMs / Long Tracks -->
+                    <section class="active-tracks-section">
+                        <div class="section-header">
+                            <h2>Tracks Ativas</h2>
+                        </div>
+                        <div id="active-tracks-list" class="active-tracks-container">
+                            <!-- Tracks em execução aparecerão aqui -->
+                            <div class="empty-state">Nenhuma trilha longa em execução.</div>
+                        </div>
+                    </section>
                 </div>
-                <div id="active-tracks-list" class="active-tracks-container">
-                    <!-- Tracks em execução aparecerão aqui -->
-                    <div class="empty-state">Nenhuma trilha longa em execução.</div>
+
+                <!-- Painel de Roteiro/Falas -->
+                <div class="script-section">
+                    <div class="section-header"
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="font-size: 1rem; color: var(--text-secondary); text-transform: uppercase;">Roteiro da
+                            Peça</h2>
+                        <button id="add-script-line" class="secondary-btn" style="width: auto; padding: 0.5rem 1rem;">+
+                            Adicionar Fala</button>
+                    </div>
+                    <div id="script-list" class="script-list">
+                        <!-- Falas/Cenas geradas via JS -->
+                    </div>
                 </div>
-            </section>
+            </div>
         </main>
     </div>
 
     <!-- Hidden Input for loading files -->
     <input type="file" id="file-input" multiple accept="audio/*" style="display: none;">
 
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modal-title">Configurar Som</h2>
+                <button id="close-modal" class="close-btn">X</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <!-- Gerado via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Settings Modal -->
+    <div id="global-settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Efeitos Globais (Master)</h2>
+                <button id="close-global-modal" class="close-btn">X</button>
+            </div>
+            <div class="modal-body" id="global-modal-body">
+                <!-- Gerado via JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Context Menu (Cards de Som) -->
+    <div id="context-menu" class="context-menu hidden">
+        <div class="ctx-title">Mudar Categoria:</div>
+        <div id="ctx-categories"></div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item" id="ctx-new-cat">+ Nova Categoria</div>
+        <div class="ctx-divider"></div>
+        <div class="ctx-item ctx-danger" id="ctx-delete-sound">&#128465; Remover Som</div>
+    </div>
+
+    <!-- Context Menu (Sidebar / Categorias) -->
+    <div id="sidebar-ctx-menu" class="context-menu hidden">
+        <div class="ctx-title" id="sidebar-ctx-name"></div>
+        <div class="ctx-item ctx-danger" id="sidebar-ctx-delete">&#128465; Deletar Categoria</div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="audio-engine.js"></script>
     <script src="script.js"></script>
 </body>
+
 </html>
