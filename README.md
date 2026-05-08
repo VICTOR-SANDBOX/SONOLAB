@@ -2,6 +2,8 @@
 
 Um sistema ágil e interativo de sonoplastia desenvolvido em HTML, CSS e JavaScript puro (Web Audio API). Foi idealizado com foco em usabilidade e workflow avançado para o controle de efeitos sonoros, trilhas musicais e ambiências em peças de teatro, podcasts e apresentações ao vivo. Sem necessidade de servidores ou bancos de dados, o SONOLAB opera 100% no cliente (no seu navegador).
 
+<img width="1920" height="924" alt="{0C83389E-5E98-4E3B-BAAE-DA9706B9C8FD}" src="https://github.com/user-attachments/assets/7f4f040c-f6d2-4158-ba79-7f4c0032c518" />
+
 ## Principais Funcionalidades
 
 ### Roteiro da Peça (Script Automático)
