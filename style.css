@@ -204,6 +204,9 @@ body {
     padding: 0.5rem;
     border-radius: 0.5rem;
     transition: background 0.2s;
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .script-text[placeholder]:empty:before {
@@ -237,6 +240,21 @@ body {
 
 .inline-cue:active {
     transform: scale(0.95);
+}
+
+.delete-cue {
+    margin-left: 6px;
+    font-style: normal;
+    opacity: 0.6;
+    transition: opacity 0.2s, color 0.2s;
+    font-weight: bold;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.delete-cue:hover {
+    opacity: 1;
+    color: #ffaaaa;
 }
 
 .script-controls {

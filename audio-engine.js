@@ -37,6 +37,14 @@ function playSound(sound) {
     initAudio();
     if (audioCtx.state === 'suspended') audioCtx.resume();
     if (!sound.config) sound.config = createDefaultConfig(sound.category);
+    
+    if (sound.category === 'music') {
+        state.activeAudios.forEach((entry, id) => {
+            const s = state.sounds.find(x => x.id === id);
+            if (s && s.category === 'music' && s.id !== sound.id) stopSound(s.id);
+        });
+    }
+
     const cfg = sound.config, audio = new Audio(sound.url);
     audio.crossOrigin = "anonymous"; audio.loop = sound.loop; audio.playbackRate = cfg.speed || 1;
     if (cfg.ducking) duckBGM(true);
@@ -111,4 +119,16 @@ function stopAll() {
     renderSoundboard(); updateActiveTracks();
 }
 
-function toggleSound(sound) { state.activeAudios.has(sound.id) ? stopSound(sound.id) : playSound(sound); }
+function toggleSound(sound) { 
+    if(sound.isMacro) {
+        sound.macroSounds.forEach(id => {
+            const s = state.sounds.find(x => x.id === id);
+            if(s) {
+                if(state.activeAudios.has(s.id)) stopSound(s.id);
+                else playSound(s);
+            }
+        });
+        return;
+    }
+    state.activeAudios.has(sound.id) ? stopSound(sound.id) : playSound(sound); 
+}

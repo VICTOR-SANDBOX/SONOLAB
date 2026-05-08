@@ -8,7 +8,7 @@ const DEFAULT_SOUNDS = [
     { id: 6, name: 'Riso Maléfico', url: 'https://cdn.pixabay.com/audio/2022/10/30/audio_55a2957774.mp3', category: 'sfx', loop: false },
 ];
 function createDefaultConfig(cat) {
-    return { volume:1, pan:0, speed:1, filter:'none', reverb:false, delay:false, ducking:cat==='sfx', fadeIn:cat==='sfx'?0:1, fadeOut:cat==='sfx'?0.2:2 };
+    return { volume:1, pan:0, speed:1, filter:'none', reverb:false, delay:false, ducking:cat==='sfx', fadeIn:cat==='sfx'?0:1, fadeOut:cat==='sfx'?0.2:2, hotkey: '' };
 }
 const state = {
     masterVolume: 0.7,
@@ -143,13 +143,17 @@ function renderSoundboard() {
         card.ondragstart = (e) => { e.dataTransfer.setData('text/plain', sound.id); card.style.opacity='0.5'; };
         card.ondragend = () => { card.style.opacity='1'; };
         card.oncontextmenu = (e) => { e.preventDefault(); showCardContextMenu(e, sound); };
-        const hk = idx < 9 ? `<span class="hotkey-badge">${idx+1}</span>` : '';
-        card.innerHTML = `${hk}<div class="sound-info"><span class="sound-name">${sound.name}</span><span class="sound-meta">${sound.category.toUpperCase()}</span></div><div class="sound-controls"><button class="loop-toggle ${sound.loop?'active':''}" data-id="${sound.id}">LOOP</button><input type="range" class="vol-slider" min="0" max="2" step="0.1" value="${sound.config.volume}" data-id="${sound.id}"><button class="config-btn" title="Configurações">⚙️</button></div>`;
-        card.onclick = (e) => { if(e.target.tagName!=='INPUT'&&e.target.tagName!=='BUTTON') toggleSound(sound); };
-        card.querySelector('.loop-toggle').onclick = (e) => { e.stopPropagation(); sound.loop=!sound.loop; card.querySelector('.loop-toggle').classList.toggle('active',sound.loop); const a=state.activeAudios.get(sound.id); if(a) a.audio.loop=sound.loop; saveState(); };
-        const vs = card.querySelector('.vol-slider');
-        vs.onclick = (e) => e.stopPropagation();
-        vs.oninput = (e) => { sound.config.volume=parseFloat(e.target.value); const a=state.activeAudios.get(sound.id); if(a&&audioCtx) a.gainNode.gain.setTargetAtTime(sound.config.volume,audioCtx.currentTime,0.05); saveState(); };
+        const displayKey = sound.config.hotkey || (idx < 9 ? (idx+1) : '');
+        const hk = displayKey ? `<span class="hotkey-badge">${displayKey}</span>` : '';
+        const controls = sound.isMacro ? `<button class="config-btn" title="Configurações">⚙️ Configurar</button>` : `<button class="loop-toggle ${sound.loop?'active':''}" data-id="${sound.id}">LOOP</button><span style="font-size:12px;margin-left:4px;" title="Volume">🔊</span><input type="range" class="vol-slider" min="0" max="2" step="0.1" value="${sound.config.volume}" data-id="${sound.id}"><button class="config-btn" title="Configurações">⚙️</button>`;
+        card.innerHTML = `${hk}<div class="sound-info"><span class="sound-name" title="${sound.name}">${sound.name}</span><span class="sound-meta">${sound.isMacro?'GRUPO':sound.category.toUpperCase()}</span></div><div class="sound-controls">${controls}</div>`;
+        card.onclick = (e) => { if(e.target.tagName!=='INPUT'&&e.target.tagName!=='BUTTON'&&!e.target.classList.contains('sound-name')) toggleSound(sound); };
+        if(!sound.isMacro) {
+            card.querySelector('.loop-toggle').onclick = (e) => { e.stopPropagation(); sound.loop=!sound.loop; card.querySelector('.loop-toggle').classList.toggle('active',sound.loop); const a=state.activeAudios.get(sound.id); if(a) a.audio.loop=sound.loop; saveState(); };
+            const vs = card.querySelector('.vol-slider');
+            vs.onclick = (e) => e.stopPropagation();
+            vs.oninput = (e) => { sound.config.volume=parseFloat(e.target.value); const a=state.activeAudios.get(sound.id); if(a&&audioCtx) a.gainNode.gain.setTargetAtTime(sound.config.volume,audioCtx.currentTime,0.05); saveState(); };
+        }
         card.querySelector('.config-btn').onclick = (e) => { e.stopPropagation(); openConfigModal(sound); };
         soundboard.appendChild(card);
     });
@@ -163,8 +167,18 @@ function updateActiveTracks() {
     tracks.forEach(([id, entry]) => {
         const s = state.sounds.find(x=>x.id===id);
         const row = document.createElement('div'); row.className='bgm-track';
-        row.innerHTML = `<div class="track-name" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div><div class="track-time" id="time-${id}" style="font-size:0.75rem;color:var(--text-secondary);width:85px;text-align:right">00:00/00:00</div><div class="track-progress" style="flex:2"><div class="progress-bar" id="progress-${id}"></div></div><button class="panic-btn" style="padding:4px 10px;font-size:0.7rem">PARAR</button>`;
-        row.querySelector('button').onclick = () => stopSound(id);
+        row.innerHTML = `<div class="track-name" style="flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${s.name}">${s.name}</div><div class="track-time" id="time-${id}" style="font-size:0.75rem;color:var(--text-secondary);width:85px;text-align:right">00:00/00:00</div><div class="track-progress" style="flex:2"><div class="progress-bar" id="progress-${id}"></div></div><span style="font-size:12px" title="Volume">🔊</span><input type="range" class="active-vol-slider" min="0" max="2" step="0.1" value="${s.config.volume}" style="width: 60px;" data-id="${id}"><button class="panic-btn" style="padding:4px 10px;font-size:0.7rem">PARAR</button>`;
+        row.querySelector('.panic-btn').onclick = () => stopSound(id);
+        const activeVol = row.querySelector('.active-vol-slider');
+        activeVol.oninput = (e) => {
+            const v = parseFloat(e.target.value);
+            s.config.volume = v;
+            const a = state.activeAudios.get(id);
+            if(a&&audioCtx) a.gainNode.gain.setTargetAtTime(v, audioCtx.currentTime, 0.05);
+            const mainSlider = document.querySelector(`.sound-card .vol-slider[data-id="${id}"]`);
+            if(mainSlider) mainSlider.value = v;
+            saveState();
+        };
         activeTracksList.appendChild(row);
     });
 }
@@ -199,13 +213,46 @@ document.getElementById('ctx-delete-sound')?.addEventListener('click', () => {
     }
     document.getElementById('context-menu').classList.add('hidden');
 });
+document.getElementById('ctx-rename-sound')?.addEventListener('click', () => {
+    const s = state.sounds.find(x=>x.id===contextSoundId);
+    if(s) {
+        const n = prompt("Novo nome para o som:", s.name);
+        if(n && n.trim()) {
+            s.name = n.trim();
+            renderSoundboard();
+            if (state.activeAudios.has(s.id)) updateActiveTracks();
+            saveState();
+        }
+    }
+    document.getElementById('context-menu').classList.add('hidden');
+});
 
 // === Config Modal ===
 function openConfigModal(sound) {
     modalTitle.textContent = 'Configurar: '+sound.name;
     const c = sound.config;
-    modalBody.innerHTML = `<div class="settings-grid"><div class="settings-group"><label>Balanço L/R: <span id="vp">${c.pan>0?'+'+c.pan:c.pan}</span></label><input type="range" id="cp" min="-1" max="1" step="0.1" value="${c.pan}"></div><div class="settings-group"><label>Velocidade/Pitch: <span id="vs">${c.speed}x</span></label><input type="range" id="cs" min="0.5" max="2" step="0.1" value="${c.speed}"></div><div class="settings-group"><label>Filtro</label><select id="cf"><option value="none" ${c.filter==='none'?'selected':''}>Nenhum</option><option value="lowpass" ${c.filter==='lowpass'?'selected':''}>Abafado (Low-Pass)</option><option value="highpass" ${c.filter==='highpass'?'selected':''}>Rádio (High-Pass)</option></select></div><div class="settings-group"><label>Fade In: <span id="vi">${c.fadeIn}s</span></label><input type="range" id="ci" min="0" max="10" step="0.5" value="${c.fadeIn}"></div><div class="settings-group"><label>Fade Out: <span id="vo">${c.fadeOut}s</span></label><input type="range" id="co" min="0" max="10" step="0.5" value="${c.fadeOut}"></div><div class="settings-group"><label class="checkbox-label"><input type="checkbox" id="cr" ${c.reverb?'checked':''}> Reverb</label><label class="checkbox-label" style="margin-top:0.5rem"><input type="checkbox" id="cd" ${c.delay?'checked':''}> Delay (Eco)</label><label class="checkbox-label" style="margin-top:0.5rem"><input type="checkbox" id="ck" ${c.ducking?'checked':''}> Auto-Ducking</label></div></div>`;
+    if(sound.isMacro) {
+        let checkboxes = state.sounds.filter(s => !s.isMacro).map(s => {
+            const isChecked = sound.macroSounds.includes(s.id);
+            return `<label class="checkbox-label" style="margin-bottom:0.5rem"><input type="checkbox" class="macro-chk" data-id="${s.id}" ${isChecked?'checked':''}> ${s.name}</label>`;
+        }).join('');
+        modalBody.innerHTML = `<div class="settings-group" style="margin-bottom:1rem"><label>Atalho de Teclado:</label><input type="text" id="chk" maxlength="1" value="${c.hotkey||''}" placeholder="Letra ou número"></div><p style="margin-bottom:1rem;color:var(--text-secondary)">Sons disparados pelo grupo:</p><div style="max-height:200px;overflow-y:auto">${checkboxes}</div>`;
+        document.querySelectorAll('.macro-chk').forEach(chk => {
+            chk.onchange = (e) => {
+                const sid = parseFloat(chk.dataset.id);
+                if(e.target.checked) sound.macroSounds.push(sid);
+                else sound.macroSounds = sound.macroSounds.filter(id => id !== sid);
+                saveState();
+            };
+        });
+        const chk = document.getElementById('chk');
+        if(chk) chk.oninput = (e) => { sound.config.hotkey = e.target.value.toUpperCase(); saveState(); renderSoundboard(); };
+        settingsModal.style.left='30%'; settingsModal.style.top='20%'; settingsModal.classList.remove('hidden');
+        return;
+    }
+    modalBody.innerHTML = `<div class="settings-group" style="margin-bottom:1rem"><label>Atalho de Teclado (Hotkey):</label><input type="text" id="chk" maxlength="1" value="${c.hotkey||''}" placeholder="Ex: A, B, 1..."></div><div class="settings-grid"><div class="settings-group"><label>Balanço L/R: <span id="vp">${c.pan>0?'+'+c.pan:c.pan}</span></label><input type="range" id="cp" min="-1" max="1" step="0.1" value="${c.pan}"></div><div class="settings-group"><label>Velocidade/Pitch: <span id="vs">${c.speed}x</span></label><input type="range" id="cs" min="0.5" max="2" step="0.1" value="${c.speed}"></div><div class="settings-group"><label>Filtro</label><select id="cf"><option value="none" ${c.filter==='none'?'selected':''}>Nenhum</option><option value="lowpass" ${c.filter==='lowpass'?'selected':''}>Abafado (Low-Pass)</option><option value="highpass" ${c.filter==='highpass'?'selected':''}>Rádio (High-Pass)</option></select></div><div class="settings-group"><label>Fade In: <span id="vi">${c.fadeIn}s</span></label><input type="range" id="ci" min="0" max="10" step="0.5" value="${c.fadeIn}"></div><div class="settings-group"><label>Fade Out: <span id="vo">${c.fadeOut}s</span></label><input type="range" id="co" min="0" max="10" step="0.5" value="${c.fadeOut}"></div><div class="settings-group"><label class="checkbox-label"><input type="checkbox" id="cr" ${c.reverb?'checked':''}> Reverb</label><label class="checkbox-label" style="margin-top:0.5rem"><input type="checkbox" id="cd" ${c.delay?'checked':''}> Delay (Eco)</label><label class="checkbox-label" style="margin-top:0.5rem"><input type="checkbox" id="ck" ${c.ducking?'checked':''}> Auto-Ducking</label></div></div>`;
     settingsModal.style.left='30%'; settingsModal.style.top='20%'; settingsModal.classList.remove('hidden');
+    const chk = document.getElementById('chk'); if(chk) chk.oninput = (e) => { sound.config.hotkey = e.target.value.toUpperCase(); saveState(); renderSoundboard(); };
     const bind = (id,key,fl,cb,vid,suf) => { const el=document.getElementById(id); if(!el) return; el.oninput=(e)=>{ const v=cb?e.target.checked:(fl?parseFloat(e.target.value):e.target.value); sound.config[key]=v; if(vid) document.getElementById(vid).textContent=(key==='pan'&&v>0?'+':'')+v+(suf||''); const a=state.activeAudios.get(sound.id); if(a&&audioCtx){ if(key==='speed') a.audio.playbackRate=v; if(key==='pan'&&a.panner) a.panner.pan.setTargetAtTime(v,audioCtx.currentTime,0.05); } saveState(); }; if(!fl) el.onchange=el.oninput; };
     bind('cp','pan',true,false,'vp',''); bind('cs','speed',true,false,'vs','x'); bind('ci','fadeIn',true,false,'vi','s'); bind('co','fadeOut',true,false,'vo','s');
     bind('cf','filter'); bind('cr','reverb',false,true); bind('cd','delay',false,true); bind('ck','ducking',false,true);
@@ -213,16 +260,48 @@ function openConfigModal(sound) {
 closeModal?.addEventListener('click', () => settingsModal.classList.add('hidden'));
 
 // === Script/Roteiro ===
+let currentCueIndex = 0;
+function triggerNextCue() {
+    const cues = Array.from(document.querySelectorAll('.inline-cue'));
+    if(cues.length === 0) return;
+    if(currentCueIndex >= cues.length) currentCueIndex = 0;
+    cues.forEach(c => c.style.outline = 'none');
+    const cueToPlay = cues[currentCueIndex];
+    cueToPlay.style.outline = '2px solid yellow';
+    cueToPlay.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    const s = state.sounds.find(x=>x.id == cueToPlay.dataset.soundId);
+    if(s) toggleSound(s);
+    currentCueIndex++;
+}
+
 function renderScript() {
     if(!scriptList) return; scriptList.innerHTML = '';
     if(!state.scriptLines.length) { scriptList.innerHTML='<div class="empty-state">Nenhuma fala adicionada. Clique em "+ Adicionar Fala".</div>'; return; }
     state.scriptLines.forEach(line => {
         const card = document.createElement('div'); card.className='script-line-card';
-        card.innerHTML = `<div class="script-text" contenteditable="true" placeholder="Digite a fala ou arraste sons para cá...">${line.text}</div><div class="script-controls" style="justify-content:flex-end"><button class="delete-line-btn">Excluir Fala</button></div>`;
+        card.innerHTML = `<div style="display:flex;gap:0.5rem;align-items:flex-start;"><div class="drag-handle" style="cursor:grab; opacity:0.5; padding-top:0.5rem;" draggable="true">☰</div><div class="script-text" style="flex:1;" contenteditable="true" placeholder="Digite a fala ou arraste sons para cá...">${line.text}</div></div><div class="script-controls" style="justify-content:flex-end"><button class="delete-line-btn">Excluir Fala</button></div>`;
         const ed = card.querySelector('.script-text');
         ed.oninput = () => { line.text=ed.innerHTML; saveState(); };
+        
+        const dh = card.querySelector('.drag-handle');
+        dh.ondragstart = (e) => { window.draggedLine=line; e.dataTransfer.setData('text/plain','line'); e.stopPropagation(); };
+        dh.ondragend = () => { window.draggedLine=null; };
+        card.ondragover = (e) => { if(window.draggedLine && window.draggedLine.id !== line.id) { e.preventDefault(); card.style.borderTop = '2px solid var(--accent)'; } };
+        card.ondragleave = () => { card.style.borderTop = ''; };
+        card.ondrop = (e) => {
+            card.style.borderTop = '';
+            if(window.draggedLine && window.draggedLine.id !== line.id) {
+                e.preventDefault(); e.stopPropagation();
+                const fromIdx = state.scriptLines.findIndex(l => l.id === window.draggedLine.id);
+                const toIdx = state.scriptLines.findIndex(l => l.id === line.id);
+                if(fromIdx >= 0 && toIdx >= 0) { const [m] = state.scriptLines.splice(fromIdx, 1); state.scriptLines.splice(toIdx, 0, m); renderScript(); saveState(); }
+            }
+        };
         // Make existing cues draggable
-        ed.querySelectorAll('.inline-cue').forEach(cue => { cue.draggable=true; cue.ondragstart=(ev)=>{ window.draggedCue=cue; ev.dataTransfer.setData('text/plain',cue.dataset.soundId); ev.stopPropagation(); }; cue.ondragend=()=>{window.draggedCue=null;}; });
+        ed.querySelectorAll('.inline-cue').forEach(cue => { 
+            if(!cue.querySelector('.delete-cue')) cue.innerHTML += ' <span class="delete-cue" title="Remover som da fala">×</span>';
+            cue.draggable=true; cue.ondragstart=(ev)=>{ window.draggedCue=cue; ev.dataTransfer.setData('text/plain',cue.dataset.soundId); ev.stopPropagation(); }; cue.ondragend=()=>{window.draggedCue=null;}; 
+        });
         ed.ondragover = (e) => { e.preventDefault(); ed.style.backgroundColor='rgba(255,255,255,0.05)'; };
         ed.ondragleave = () => { ed.style.backgroundColor='transparent'; };
         ed.ondrop = (e) => {
@@ -233,14 +312,30 @@ function renderScript() {
             let range; if(document.caretRangeFromPoint) range=document.caretRangeFromPoint(e.clientX,e.clientY);
             else if(e.rangeParent) { range=document.createRange(); range.setStart(e.rangeParent,e.rangeOffset); }
             if(range) {
-                const cue=document.createElement('span'); cue.className='inline-cue'; cue.contentEditable=false; cue.draggable=true; cue.dataset.soundId=snd.id; cue.innerHTML='🎵 '+snd.name;
+                const cue=document.createElement('span'); cue.className='inline-cue'; cue.contentEditable=false; cue.draggable=true; cue.dataset.soundId=snd.id; cue.innerHTML=`🎵 ${snd.name} <span class="delete-cue" title="Remover som da fala">×</span>`;
                 cue.ondragstart=(ev)=>{window.draggedCue=cue;ev.dataTransfer.setData('text/plain',snd.id);ev.stopPropagation();}; cue.ondragend=()=>{window.draggedCue=null;};
                 range.insertNode(cue); const sp=document.createTextNode('\u00A0'); range.setStartAfter(cue); range.insertNode(sp);
                 const sel=window.getSelection(); sel.removeAllRanges(); const nr=document.createRange(); nr.setStartAfter(sp); nr.collapse(true); sel.addRange(nr);
                 line.text=ed.innerHTML; saveState();
             }
         };
-        ed.onclick = (e) => { const cue=e.target.closest('.inline-cue'); if(cue){ const s=state.sounds.find(x=>x.id==cue.dataset.soundId); if(s) playSound(s); } };
+        ed.onclick = (e) => { 
+            if(e.target.classList.contains('delete-cue')) {
+                const cue = e.target.closest('.inline-cue');
+                if(cue) cue.remove();
+                line.text = ed.innerHTML;
+                saveState();
+                return;
+            }
+            const cue=e.target.closest('.inline-cue'); 
+            if(cue){ 
+                const s=state.sounds.find(x=>x.id==cue.dataset.soundId); 
+                if(s) playSound(s); 
+                const allCues = Array.from(document.querySelectorAll('.inline-cue'));
+                currentCueIndex = allCues.indexOf(cue) + 1;
+                allCues.forEach(c => c.style.outline = 'none');
+            } 
+        };
         card.querySelector('.delete-line-btn').onclick = () => { state.scriptLines=state.scriptLines.filter(l=>l.id!==line.id); renderScript(); saveState(); };
         scriptList.appendChild(card);
     });
@@ -253,6 +348,12 @@ function setupEventListeners() {
     window.addEventListener('keydown', (e) => {
         if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.isContentEditable) return;
         if(e.key==='Escape') return stopAll();
+        if(e.key===' ') { e.preventDefault(); return triggerNextCue(); }
+        
+        const key = e.key.toLowerCase();
+        const snd = state.sounds.find(s => s.config.hotkey && s.config.hotkey.toLowerCase() === key);
+        if(snd) { toggleSound(snd); return; }
+        
         const n = parseInt(e.key);
         if(n>=1&&n<=9) { const list=state.filter==='all'?state.sounds:state.sounds.filter(s=>s.category===state.filter); if(list[n-1]) toggleSound(list[n-1]); }
     });
@@ -262,6 +363,13 @@ function setupEventListeners() {
         renderCategories(); renderSoundboard(); renderScript(); saveState();
     };
     addScriptBtn?.addEventListener('click', () => { state.scriptLines.push({id:Date.now(),text:''}); renderScript(); saveState(); setTimeout(()=>{ const t=document.querySelectorAll('.script-text'); if(t.length) t[t.length-1].focus(); },50); });
+    document.getElementById('go-button')?.addEventListener('click', triggerNextCue);
+    document.getElementById('add-macro')?.addEventListener('click', () => {
+        const name = prompt("Nome do Grupo/Macro:");
+        if(!name) return;
+        state.sounds.push({ id:Date.now()+Math.random(), name:name, category:'sfx', isMacro:true, macroSounds:[], config:createDefaultConfig('sfx') });
+        renderCategories(); renderSoundboard(); saveState();
+    });
 
     // Global Modal
     globalSettingsBtn?.addEventListener('click', () => {
